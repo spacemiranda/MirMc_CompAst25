@@ -1,6 +1,7 @@
 """Computational Astronomy Homework, week of September 25th
 
  Write a program that uses either Newton’s method or the secant method to solve for the distance r from the Earth to the L1 point. Compute a solution accurate to at least four significant figures. 
+ (Note, Newton's method is so accurate and fast at getting to the right answer that you have to be pretty far off with the initial guess for r, or at a very high tolerance, to get it to take more than a couple iterations to find the solution when given the default constants!)
 - Miranda McCarthy, September 25th 2025
 """
 # import libraries
@@ -9,6 +10,7 @@ import numpy as np
 from astropy import constants as const
 from time import sleep
 import argparse
+import sys
 #import pdb # debugging package
 
 # define the functions we'll be using
@@ -104,6 +106,8 @@ def newt_method(inpfn, deriv_inpfn, initial_guess, nitersmax = 100, tolerance= 1
     """
     niters = 0
     current_guess = initial_guess
+    if tolerance < sys.float_info.epsilon:
+        print(f"Hey, your tolerance of {tolerance} is below machine precision {sys.float_info.epsilon}! Be aware that it's going to be effectively machine precision!")
     while niters < nitersmax:
         currentval = current_guess - inpfn(current_guess, **inpfn_kwargs)/deriv_inpfn(current_guess, **deriv_kwargs)
         if abs(currentval - current_guess) <= tolerance:
@@ -306,6 +310,11 @@ if __name__ == '__main__':
     #debug
     if args.printargs:
         print(args)
+    # warn about r
+    if r > 1e13:
+        print(f"HEADS UP: your input guess for r {r:0.4e} is a: getting big enough that you might have trouble finding a solution, and may get divide-by-zero warnings if running with 'vary_constants' in the runmode, and b: about two orders of magnitude greater than the distance between Earth and the Sun.")
+    if r > R:
+        print(f"HEADS UP: your guess for the r {r:0.4e} is greater than the value you've given for the distance between Earth and the Moon (R = {R:0.4e}).")
 
     # combine args that are used together as kwargs a lot into one dictionary
     l1_kwargs = {'G':G, 'R':R, 'M_earth':M_earth, 'm_moon':m_moon, 'omega':omega}
@@ -366,7 +375,9 @@ if __name__ == '__main__':
 
     if vary_constants:
         print(f"Plot r as a function of various constants - IE, pass a list of constants and a range of percentages by which you wish to vary them, and this will plot the solution the Newton's method gets for r as a function of the percentage a constant is being varied by. (For an example, just don't change any arguments and let this run as default.) Where the line breaks, that's where no solution was found within the given tolerance / max iterations.\n This may take a few seconds!! If you want it to go faster, increase the ratio that is used to determine the step size of the arange of percentages this function steps through (the last argument in percent_step_rat, currently {percent_step_rat[-1]}).\n\n")
-        
+
+        if r > 5e13:
+            print(f"HEADS UP: Your input value for r is getting large enough that you may start to encounter RuntimeWarnings and not get valid solutions, especially when varying omega. Also, remember that 1 AU is ~1.5e11 m. ")
         fig = plt.figure()
         ax = fig.add_subplot()
 
